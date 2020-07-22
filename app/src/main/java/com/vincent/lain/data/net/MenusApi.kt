@@ -8,6 +8,10 @@ import retrofit2.http.Query
 interface MenusApi {
 
     @GET("/food/menuItems/search")
-    fun searchMenu(@Query("apiKey") apiKey: String, @Query("query") q: String): Call<MenuResponse>
+    fun searchMenu(@Query("apiKey") apiKey: String,
+                   @Query("query") q: String,
+                   @Query("offset") offset: Int,
+                   @Query("number") number: Int
+    ): Call<MenuResponse>
 
 }

@@ -1,16 +1,12 @@
 package com.vincent.lain.data
 
-import android.util.Log
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Transformations
+import androidx.paging.LivePagedListBuilder
 import com.vincent.lain.data.db.MenuDao
 import com.vincent.lain.data.model.Menu
 import com.vincent.lain.data.net.RetrofitClient
-import com.vincent.lain.data.model.MenuResponse
 import com.vincent.lain.db
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import kotlin.concurrent.thread
 
 class MenuRepositoryImpl : MenuRepository {
@@ -37,20 +33,21 @@ class MenuRepositoryImpl : MenuRepository {
         }
     }
 
-    override fun searchMenu(query: String): LiveData<List<Menu>?> {
-        val data = MutableLiveData<List<Menu>>()
+    override fun searchMenu(query: String): Listing<Menu> {
+        val menuDataSourceFactory = MenuDataSourceFactory(retrofitClient, query)
+        val livePagedList = LivePagedListBuilder(menuDataSourceFactory, MenuDataSourceFactory.pagedListConfig()).build()
 
-        retrofitClient.searchMenus(query).enqueue(object : Callback<MenuResponse> {
-            override fun onFailure(call: Call<MenuResponse>, t: Throwable) {
-                data.value = null
-                Log.d(this.javaClass.simpleName, "Failure")
+        return Listing(
+            pagedList = livePagedList,
+            networkState = Transformations.switchMap(menuDataSourceFactory.menuDataSource) {
+                it.networkState
             }
+        )
 
-            override fun onResponse(call: Call<MenuResponse>, response: Response<MenuResponse>) {
-                data.value = response.body()?.menuItems
-                Log.d(this.javaClass.simpleName, "Response: ${response.body()?.menuItems}")
-            }
-        })
-        return data
     }
+
+
+
+
+
 }

@@ -27,7 +27,8 @@ class RetrofitClient {
         menusApi = retrofit.create(MenusApi::class.java)
     }
 
-    fun searchMenus(query: String): Call<MenuResponse> {
-        return menusApi.searchMenu(API_KEY, query)
+    fun searchMenus(query: String, offset: Int, number: Int): Call<MenuResponse> {
+//        return menusApi.searchMenu(API_KEY, query)
+        return menusApi.searchMenu(API_KEY, query, offset, number)
     }
 }

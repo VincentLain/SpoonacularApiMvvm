@@ -1,6 +1,7 @@
 package com.vincent.lain.data
 
 import androidx.lifecycle.LiveData
+import androidx.paging.PagedList
 import com.vincent.lain.data.model.Menu
 
 interface MenuRepository {
@@ -10,5 +11,5 @@ interface MenuRepository {
 
     fun deleteMenu(menu: Menu)
 
-    fun searchMenu(query: String): LiveData<List<Menu>?>
+    fun searchMenu(query: String): Listing<Menu>
 }

@@ -1,6 +1,7 @@
 package com.vincent.lain.view.activities
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.Observer
@@ -10,8 +11,9 @@ import com.vincent.lain.R
 import com.vincent.lain.action
 import com.vincent.lain.data.model.Menu
 import com.vincent.lain.snack
-import com.vincent.lain.view.adapters.SearchAdapter
+import com.vincent.lain.view.adapters.MenuPagedListAdapter
 import com.vincent.lain.viewmodel.SearchViewModel
+import com.vincent.lain.viewmodel.SearchViewModelFactory
 import kotlinx.android.synthetic.main.activity_search.*
 import kotlinx.android.synthetic.main.toolbar_view_custom_layout.*
 import org.jetbrains.anko.clearTask
@@ -22,9 +24,10 @@ class SearchActivity : BaseActivity() {
 
     private val toolbar: Toolbar by lazy { toolbar_toolbar_view as Toolbar }
 
-    private var adapter = SearchAdapter(mutableListOf()) { menu -> displayConfirmation(menu) }
+    private val adapter by lazy { MenuPagedListAdapter(){menu -> displayConfirmation(menu)} }
 
     private lateinit var viewModel: SearchViewModel
+    private lateinit var viewModelFactory: SearchViewModelFactory
 
     private lateinit var title: String
 
@@ -36,35 +39,15 @@ class SearchActivity : BaseActivity() {
         intent?.extras?.getString("title")?.let {
             title = it
         }
-        viewModel = ViewModelProviders.of(this).get(SearchViewModel::class.java)
+        viewModelFactory = SearchViewModelFactory(title)
+        viewModel = ViewModelProviders.of(this, viewModelFactory).get(SearchViewModel::class.java)
         searchRecyclerView.adapter = adapter
         searchMenus()
-    }
 
-    private fun showLoading() {
-        searchProgressBar.visibility = View.VISIBLE
-        searchRecyclerView.isEnabled = false
-    }
-
-    private fun hideLoading() {
-        searchProgressBar.visibility = View.GONE
-        searchRecyclerView.isEnabled = true
-    }
-
-    private fun showMessage(message: String) {
-        searchLayout.snack(message, Snackbar.LENGTH_INDEFINITE) {
-            action(getString(R.string.ok)) {
-                searchMenus()
-            }
-        }
-    }
-
-    private fun showEmptyResponseMessage(message: String) {
-        searchLayout.snack(message, Snackbar.LENGTH_INDEFINITE) {
-            action(getString(R.string.ok)) {
-                finish()
-            }
-        }
+        viewModel.networkState.observe(this, Observer { networkState ->
+            Log.e("NetworkState: ", networkState.getMsg()  + " " + networkState.getStatus())
+            adapter.setNetworkState(networkState)
+        })
     }
 
     private fun displayConfirmation(menu: Menu) {
@@ -77,20 +60,8 @@ class SearchActivity : BaseActivity() {
     }
 
     private fun searchMenus() {
-        showLoading()
-        viewModel.searchMenu(title).observe(this, Observer { menus ->
-            hideLoading()
-            when {
-                menus == null -> {
-                    showMessage(getString(R.string.network_error))
-                }
-                menus.isEmpty() -> {
-                    showEmptyResponseMessage(getString(R.string.response_empty))
-                }
-                else -> {
-                    adapter.setMenus(menus)
-                }
-            }
+        viewModel.menus.observe(this, Observer { menus ->
+            adapter.submitList(menus)
         })
     }
 }
